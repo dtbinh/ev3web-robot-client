@@ -20,8 +20,6 @@ import lejos.utility.TimerListener;
 
 public class ISPRobot {
 
-    // SUPER HANDY RESOURCE: http://stackoverflow.com/questions/3732109/simple-http-server-in-java-using-only-java-se-api
-
     static Brick brick = BrickFinder.getDefault();
     static GraphicsLCD g = brick.getGraphicsLCD();
 
@@ -131,7 +129,7 @@ public class ISPRobot {
 
         scheduler.start();
 
-        // Close motors?/**/
+        // Close motors?
         g.clear();
         g.drawString("Executing…", 0, 0, GraphicsLCD.VCENTER | GraphicsLCD.LEFT);
     }
