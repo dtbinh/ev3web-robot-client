@@ -20,31 +20,29 @@ import lejos.utility.TimerListener;
 
 public class ISPRobot {
 
-    static Brick brick = BrickFinder.getDefault();
-    static GraphicsLCD g = brick.getGraphicsLCD();
+    static private Brick brick = BrickFinder.getDefault();
+    static private GraphicsLCD g = brick.getGraphicsLCD();
 
     // Motors
-    static EV3LargeRegulatedMotor leftMotor = new EV3LargeRegulatedMotor(MotorPort.B);
-    static EV3LargeRegulatedMotor rightMotor = new EV3LargeRegulatedMotor(MotorPort.C);
-    static EV3LargeRegulatedMotor armMotor = new EV3LargeRegulatedMotor(MotorPort.A); // The port and "large" are both probably wrong
+    static private EV3LargeRegulatedMotor leftMotor = new EV3LargeRegulatedMotor(MotorPort.B);
+    static private EV3LargeRegulatedMotor rightMotor = new EV3LargeRegulatedMotor(MotorPort.C);
+    static private EV3LargeRegulatedMotor armMotor = new EV3LargeRegulatedMotor(MotorPort.A); // The port and "large" are both probably wrong
 
     // Sensors
-    static EV3GyroSensor gyro = new EV3GyroSensor(SensorPort.S2);
-    static EV3UltrasonicSensor sensor = new EV3UltrasonicSensor(SensorPort.S4);
-    static SampleProvider dist = sensor.getDistanceMode();
-    static EV3ColorSensor colorSensor = new EV3ColorSensor(SensorPort.S3);
-    static SampleProvider color = colorSensor.getRGBMode();
+    static private EV3GyroSensor gyro = new EV3GyroSensor(SensorPort.S2);
+    static private EV3UltrasonicSensor sensor = new EV3UltrasonicSensor(SensorPort.S4);
+    static private SampleProvider dist = sensor.getDistanceMode();
+    static private EV3ColorSensor colorSensor = new EV3ColorSensor(SensorPort.S3);
+    static private SampleProvider color = colorSensor.getRGBMode();
 
     // Socket
-
-    static URI uri;
-    static Manager manager;
-    static Socket socket;
+    static private Socket socket;
 
     public static void main(String[] args) throws Exception {
-        uri = new URI("http://192.168.14.222");
-        manager = new Manager(uri);
+        URI uri = new URI("http://192.168.14.222");
+        Manager manager = new Manager(uri);
         socket = manager.socket("/robot");
+
         RegulatedMotor[] list = new RegulatedMotor[1];
         list[0] = rightMotor;
 
@@ -117,17 +115,25 @@ public class ISPRobot {
             @Override
             public void timedOut() {
                 // TODO: Implement arm safety…somehow
-                dist.fetchSample(distSample, 0);
-                if (distSample[0] < 0.2) stop(); // Protects against (physical) crashing
                 gyro.fetchSample(gyroSample, 0);
+                dist.fetchSample(distSample, 0);
                 color.fetchSample(colorSample, 0);
                 socket.emit("gyro-sample", gyroSample[0]);
                 socket.emit("infrared-sample", distSample[0]);
                 socket.emit("color-sample", colorSample);
             }
         });
-
         scheduler.start();
+
+        Timer safety = new Timer(5, new TimerListener() {
+            float[] distSample = new float[dist.sampleSize()];
+            @Override
+            public void timedOut() {
+                dist.fetchSample(distSample, 0);
+                if (distSample[0] < 0.2) stop(); // Protects against (physical) crashing
+            }
+        });
+        safety.start();
 
         // Close motors?
         g.clear();
